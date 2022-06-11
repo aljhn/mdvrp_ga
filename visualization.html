@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body{
+                background-color: #333333;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="output.js"></script>
+        <canvas id="kanvas" width="800" height="800"></canvas>
+        <script>
+            var c = document.getElementById("kanvas");
+            var ctx = c.getContext("2d");
+            
+            ctx.fillStyle = "#111111";
+            ctx.fillRect(0, 0, c.width, c.height);
+
+            // Find the total amount of routes
+            var routeAmount = 0;
+            for(i = 0; i < routes.length; i++){
+                routeAmount += routes[i].length;
+            }
+
+            // Use this amount to generate random colors in an array
+            var colorOffset = Math.floor(360 / routeAmount);
+            var colors = [];
+            for(i = 0; i < routeAmount; i += 1){
+                var h = colorOffset * (i + 1);
+                colors.push("hsl(" + h + ", 100%, 50%)");
+            }
+
+            // Shuffle the colors
+            for(i = routeAmount - 1; i > 0; i--){
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = colors[i];
+                colors[i] = colors[j];
+                colors[j] = temp;
+            }
+
+            // Find the min and max coords
+            // Later use these to transform the points do canvas space
+            var minX = 1000000000;
+            var minY = 1000000000;
+            var maxX = -1000000000;
+            var maxY = -1000000000;
+            for(i = 0; i < depots.length; i += 2){
+                if(depots[i] < minX){
+                    minX = depots[i];
+                }
+                if(depots[i] > maxX){
+                    maxX = depots[i];
+                }
+                if(depots[i + 1] < minY){
+                    minY = depots[i + 1];
+                }
+                if(depots[i + 1] > maxY){
+                    maxY = depots[i + 1];
+                }
+            }
+            for(i = 0; i < routes.length; i++){
+                for(j = 0; j < routes[i].length; j++){
+                    for(k = 0; k < routes[i][j].length; k += 2){
+                        if(routes[i][j][k] < minX){
+                            minX = routes[i][j][k];
+                        }
+                        if(routes[i][j][k] > maxX){
+                            maxX = routes[i][j][k];
+                        }
+                        if(routes[i][j][k + 1] < minY){
+                            minY = routes[i][j][k + 1];
+                        }
+                        if(routes[i][j][k + 1] > maxY){
+                            maxY = routes[i][j][k + 1];
+                        }
+                    }
+                }
+            }
+            minX -= 2;
+            maxX += 2;
+            minY -= 2;
+            maxY += 2;
+
+            // Draw every depot and customer as a filled circle on the canvas
+            // Transform the coords to fill the canvas space
+            var routeIndex = 0;
+            for(i = 0; i < depots.length; i += 2){
+                var x = (depots[i] - minX) * c.width / (maxX - minX);
+                var y = (depots[i + 1] - minY) * c.height / (maxY - minY);
+                ctx.fillStyle = "#eeeeee";
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+                for(j = 0; j < routes[i / 2].length; j++){
+                    ctx.fillStyle = colors[routeIndex++];
+                    for(k = 0; k < routes[i / 2][j].length; k += 2){
+                        x = (routes[i / 2][j][k] - minX) * c.width / (maxX - minX);
+                        y = (routes[i / 2][j][k + 1] - minY) * c.height / (maxY - minY);
+                        ctx.beginPath();
+                        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+            
+            // Draw the routes between depots and customers
+            // Need separate for loop to not interfere with the beginPath() from drawing the circles
+            routeIndex = 0;
+            for(i = 0; i < routes.length; i++){
+                for(j = 0; j < routes[i].length; j++){
+                    ctx.strokeStyle = colors[routeIndex++];
+                    var x = (depots[i * 2] - minX) * c.width / (maxX - minX);
+                    var y = (depots[i * 2 + 1] - minY) * c.height / (maxY - minY);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    for(k = 0; k < routes[i][j].length; k += 2){
+                        x = (routes[i][j][k] - minX) * c.width / (maxX - minX);
+                        y = (routes[i][j][k + 1] - minY) * c.height / (maxY - minY);
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+        </script>
+    </body>
+</html>
